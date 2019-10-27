@@ -49,7 +49,6 @@ struct temp_add_2 {
 template <typename T>
 temp_add_2<T> add_2;
  
-
  temp_add_1& operator << (ostream& stream, temp_add_1){
 	 buff = stream.rdbuf();
 	 return add;
