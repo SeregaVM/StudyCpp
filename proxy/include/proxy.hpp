@@ -1,7 +1,7 @@
 /* Proxy object.
  * @file
- * @date 2018-08-07
- * @author Anonymous
+ * @date 2019-12-06
+ * @author Serega
  */
 
 #ifndef __PROXY_HPP__
@@ -14,27 +14,28 @@ class ptr_holder
 {
 public:
     ptr_holder(T* ptr): ptr_(ptr) {}
-
-    //{ describe proxy object
-    class proxy: private ???
+    ~ptr_holder(){};
+    
+    class proxy: private std::lock_guard<std::mutex> 
     {
     public:
-        proxy(???): ???
-        {}
 
+        proxy(T * ptr, std::mutex& mtx): std::lock_guard<std::mutex> (mtx), ptr_proxy(ptr) {}
+        T* operator -> () const {return ptr_proxy;}
+        ~proxy(){};
     private:
-        ???
+        T* ptr_proxy;
     };
 
-    ??? operator -> () const
+    proxy operator -> () const
     {
-        return ???;
+        return proxy( ptr_, mutex_);
     }
-    //}
-
+    
 private:
     T* ptr_;
     mutable std::mutex mutex_;
 };
 
 #endif // __PROXY_HPP__
+
