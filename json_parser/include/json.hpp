@@ -36,12 +36,17 @@ namespace types
     namespace json
     {
         //{ describe json data types
-        ... value = ...
+        struct value;
+        using array = std::vector<value>;
+        using object = std::map<std::string, value>;
 
-        ... array
-        ... object
+        using json = variant_decorator<array, object>;
 
-        ... json
+        struct value : public variant_decorator<int, float, std::string, bool, std::nullptr_t, array, object>
+        {
+             using variant_decorator::variant_decorator;
+             using variant_decorator::operator=;
+        };
         //}
     }
 }
@@ -55,20 +60,23 @@ namespace parser
         const auto sfloat_ = x3::real_parser<float, x3::strict_real_policies<float>>();
 
         //{ describe json grammar
-        ... number = ...
-        ... nullable = ...
+        auto number = sfloat_ | x3::int_;
+        auto nullable = x3::rule<class nullable, std::nullptr_t>{} 
+                      = "null" > x3::attr(nullptr);
 
-        ... array = ...
-        ... object = ...
-        ... json = ...
+        x3::rule<class array, types::json::array> const array = "array";
+        x3::rule<class object, types::json::object> const object = "object";
+        x3::rule<class json, types::json::json> json = "json";
 
-        ... value = ...
+        auto value = x3::rule<class value, types::json::value>{}
+                   =  array | object | number | quoted_string | x3::bool_ | nullable;
 
-        ... key_value = ...
+        auto key_value = x3::rule<class key_value, std::pair<std::string, types::json::value>>{}
+                       = quoted_string > ':' > value;
 
-        ... array??? = ...
-        ... object??? = ...
-        ... json??? = ...
+        auto const array_def  = '[' > -(value % ',') > ']';
+        auto const object_def = '{' > -(key_value % ',') > '}';
+        auto const json_def = array | object;
         //}
 
         BOOST_SPIRIT_DEFINE(array, object, json)
@@ -80,9 +88,9 @@ namespace literals
     namespace json
     {
         //{ describe ``_json`` literal
-        ... _json...
-        {
-
+        types::json::json operator ""_json(const char* str, long unsigned int)
+        {   
+            return parser::load_from_string<types::json::json>(str, parser::json::json);
         }
         //}
     }
